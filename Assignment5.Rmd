@@ -1,0 +1,182 @@
+---
+title: "Assignment5"
+output: pdf_document
+date: "2023-09-18"
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(tidymodels)
+library(e1071)
+library(ROCR)
+```
+
+```{r}
+parole = read_csv("parole.csv")
+head(parole)
+```
+
+```{r}
+parole = parole %>% mutate_if(is.numeric, as_factor)
+```
+
+```{r}
+parole <- parole %>%
+      mutate(male = ifelse(male == 0,"female", "male")) %>%
+      mutate(race = ifelse(race == 1, "white","not white")) %>%
+      mutate(multiple.offenses = ifelse(multiple.offenses == 0, "no", "yes")) %>%
+      mutate(violator = ifelse(violator == 0, "no", "yes"))
+parole = parole %>% mutate_if(is.character, as_factor)
+head(parole)
+```
+
+```{r}
+summary(parole)
+```
+
+```{r}
+set.seed(12345)
+parole_split = initial_split(parole, prop = 0.70, strata = violator)
+train = training(parole_split)
+test = testing(parole_split)
+```
+
+```{r}
+levels(train$violator)
+```
+
+```{r}
+ggplot(parole, aes(x=male, fill = violator)) + geom_bar() + theme_bw()
+```
+
+```{r}
+parole_model = 
+  logistic_reg() %>% #note the use of logistic_reg
+  set_engine("glm") #standard logistic regression engine is glm
+
+parole_recipe = recipe(violator ~ state, train) %>%
+  step_dummy(all_nominal(), -all_outcomes()) #exclude the response variable from being dummy converted  
+
+logreg_wf = workflow() %>%
+  add_recipe(parole_recipe) %>% 
+  add_model(parole_model)
+
+parole_fit = fit(logreg_wf, train)
+```
+
+```{r}
+summary(parole_fit$fit$fit$fit)
+```
+
+```{r}
+parole_model2 = 
+  logistic_reg() %>% #note the use of logistic_reg
+  set_engine("glm") #standard logistic regression engine is glm
+
+parole_recipe2 = recipe(violator ~ state + multiple.offenses + race, train) %>%
+  step_dummy(all_nominal(), -all_outcomes()) #exclude the response variable from being dummy converted  
+
+logreg_wf = workflow() %>%
+  add_recipe(parole_recipe2) %>% 
+  add_model(parole_model2)
+
+parole_fit2 = fit(logreg_wf, train)
+```
+
+```{r}
+summary(parole_fit2$fit$fit$fit)
+```
+
+```{r}
+newdata = data.frame(state = "3", multiple.offenses = "yes", race = "white")
+predict(parole_fit2, newdata, type="prob")
+```
+
+```{r}
+predictions = predict(parole_fit2, train, type="prob")[2]
+head(predictions)
+```
+
+
+
+```{r}
+ROCRpred = prediction(predictions, train$violator) 
+
+###You shouldn't need to ever change the next two lines:
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+
+```{r}
+as.numeric(performance(ROCRpred, "auc")@y.values)
+```
+
+```{r}
+#Determine threshold to balance sensitivity and specificity
+#DO NOT modify this code
+opt.cut = function(perf, pred){
+    cut.ind = mapply(FUN=function(x, y, p){
+        d = (x - 0)^2 + (y-1)^2
+        ind = which(d == min(d))
+        c(sensitivity = y[[ind]], specificity = 1-x[[ind]], 
+            cutoff = p[[ind]])
+    }, perf@x.values, perf@y.values, pred@cutoffs)
+}
+print(opt.cut(ROCRperf, ROCRpred))
+```
+
+```{r}
+t1 = table(train$violator,predictions > 0.2015788)
+t1
+```
+
+```{r}
+(t1[1,1]+t1[2,2])/nrow(train)
+```
+
+```{r}
+t1 = table(train$violator,predictions > 0.2)
+t1
+(t1[1,1]+t1[2,2])/nrow(train)
+```
+
+```{r}
+t1 = table(train$violator,predictions > 0.3)
+t1
+(t1[1,1]+t1[2,2])/nrow(train)
+```
+
+```{r}
+t1 = table(train$violator,predictions > 0.4)
+t1
+(t1[1,1]+t1[2,2])/nrow(train)
+```
+
+```{r}
+t1 = table(train$violator,predictions > 0.5)
+t1
+(t1[1,1]+t1[2,2])/nrow(train)
+```
+ 
+```{r}
+predictions = predict(parole_fit2, test, type="prob")[2]
+t1 = table(test$violator,predictions > 0.5)
+t1
+(t1[1,1]+t1[2,2])/nrow(test)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

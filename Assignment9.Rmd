@@ -1,0 +1,50 @@
+---
+title: "Assignment9"
+output: pdf_document
+date: "2023-10-06"
+---
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(cluster) #algorithms for clustering
+library(factoextra) #visualization
+library(dendextend)
+```
+
+```{r}
+trucks = read_csv("trucks-1.csv")
+head(trucks)
+```
+
+
+```{r}
+ggplot(trucks, aes(Distance, Speeding)) +
+  geom_point(alpha = 0.4) + theme_bw()
+```
+
+```{r}
+vis_miss(trucks)
+```
+
+```{r}
+trucks_scaled = trucks %>% select(-Driver_ID)
+```
+
+
+```{r}
+scale(trucks_scaled) 
+summary(trucks_scaled)
+```
+
+
+
+
+
+
+
+
+
+
+
+

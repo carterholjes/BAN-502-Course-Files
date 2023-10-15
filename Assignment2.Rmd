@@ -1,0 +1,101 @@
+---
+title: "Assignment 2"
+output: pdf_document
+date: "2023-09-11"
+---
+
+```{r}
+library(tidyverse) #tidyverse set of packages and functions
+library(tidymodels)
+library(glmnet) #for Lasso, ridge, and elastic net models 
+library(GGally) #create ggcorr and ggpairs plots
+library(ggcorrplot) #create an alternative to ggcorr plots
+library(MASS) #access to forward and backward selection algorithms
+library(leaps) #best subset selection
+library(lmtest) #for the dw test
+library(splines) #for nonlinear fitting
+```
+
+```{r}
+bike = read_csv("bike_cleaned-3.csv")
+head(bike)
+```
+
+```{r}
+bike = bike %>% mutate(dteday = mdy(dteday))
+```
+
+```{r}
+bike = bike %>% mutate_if(is.character, as_factor)
+```
+
+```{r}
+bike = bike %>% mutate(hr = as_factor(hr))
+```
+
+
+```{r}
+ggpairs(bike, columns = 10:16)
+```
+
+```{r}
+ggcorr(bike)
+```
+
+```{r}
+ggplot(bike,aes(x=season,y=count)) + geom_col() + theme_bw()
+```
+
+```{r}
+bike_recipe = recipe(count ~ hr, bike) %>%
+  step_dummy(all_nominal())
+
+lm_model = #give the model type a name 
+  linear_reg() %>% #specify that we are doing linear regression
+  set_engine("lm") #specify the specify type of linear tool we want to use 
+
+lm_wflow = 
+  workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(bike_recipe)
+
+lm_fit = fit(lm_wflow, bike)
+```
+
+```{r}
+summary(lm_fit$fit$fit$fit)
+```
+
+```{r}
+mod1 = lm(count ~ hr, bike)
+summary(mod1)
+```
+
+```{r}
+ggplot(bike,aes(x=temp,y=count)) + geom_point() + theme_bw()
+```
+
+```{r}
+mod2 = lm(count ~ hr + temp, bike)
+summary(mod2)
+```
+
+```{r}
+mod3 = lm(count ~ temp + atemp, bike)
+summary(mod3)
+```
+
+```{r}
+allmod = lm(count ~., bike) #use the ~. to include all predictors rather than typing them all in
+summary(allmod)
+
+emptymod = lm(count ~1, bike) #use ~1 to build an empty model 
+summary(emptymod)
+```
+
+```{r}
+#backward
+backmod = stepAIC(allmod, direction = "backward", trace = TRUE) #trace = TRUE shows how the model is built (which variables are removed)
+summary(backmod)
+```
+

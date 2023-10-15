@@ -1,0 +1,52 @@
+---
+title: "Assignment 3"
+output: pdf_document
+date: "2023-09-12"
+---
+
+```{r}
+library(tidyverse) #tidyverse set of packages and functions
+library(tidymodels)
+library(glmnet) #for Lasso, ridge, and elastic net models 
+library(GGally) #create ggcorr and ggpairs plots
+library(ggcorrplot) #create an alternative to ggcorr plots
+library(MASS) #access to forward and backward selection algorithms
+library(leaps) #best subset selection
+library(lmtest) #for the dw test
+library(splines) #for nonlinear fitting
+```
+
+```{r}
+air = airquality
+head(air)
+```
+
+```{r}
+air2 = air %>% drop_na()
+```
+
+```{r}
+credit_simple = recipe(Ozone ~ Temp, air)
+
+lm_model = #give the model type a name 
+  linear_reg() %>% #specify that we are doing linear regression
+  set_engine("lm") #specify the specify type of linear tool we want to use 
+
+lm_wflow = 
+  workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(credit_simple)
+
+lm_fit = fit(lm_wflow, air)
+```
+
+```{r}
+summary(lm_fit$fit$fit$fit)
+```
+
+
+```{r}
+testdata = data.frame(Temp = 80)
+predict(lm_fit, new_data = testdata)
+```
+
